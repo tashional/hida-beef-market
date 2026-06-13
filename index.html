@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>飛騨牛 枝肉相場の推移 | JAひだミート データ</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f7f5f1;
+    --card: #ffffff;
+    --ink: #2b2620;
+    --sub: #7a7268;
+    --accent: #a4453a;
+    --accent2: #3a6ea4;
+    --accent3: #b08a2e;
+    --line: #e6e1d8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    background: var(--bg); color: var(--ink); line-height: 1.6;
+  }
+  header {
+    background: linear-gradient(135deg, #6d2e27, #a4453a);
+    color: #fff; padding: 28px 24px;
+  }
+  header h1 { font-size: 1.45rem; font-weight: 700; }
+  header p { opacity: .85; font-size: .85rem; margin-top: 4px; }
+  header a { color: #ffd9d2; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 60px; }
+  .cards { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 20px; flex: 1 1 200px; box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  }
+  .card .label { font-size: .78rem; color: var(--sub); }
+  .card .value { font-size: 1.7rem; font-weight: 700; margin-top: 2px; }
+  .card .value small { font-size: .85rem; font-weight: 400; color: var(--sub); }
+  .card .diff { font-size: .82rem; margin-top: 2px; }
+  .diff.up { color: #1d7a3e; } .diff.down { color: #b3362a; } .diff.flat { color: var(--sub); }
+  section.panel {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,.05);
+  }
+  section.panel h2 { font-size: 1.05rem; margin-bottom: 12px; border-left: 4px solid var(--accent); padding-left: 10px; }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .controls button {
+    border: 1px solid var(--line); background: #faf8f4; color: var(--ink);
+    border-radius: 20px; padding: 5px 14px; font-size: .82rem; cursor: pointer;
+  }
+  .controls button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .chart-wrap { position: relative; height: 420px; }
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { background: #faf8f4; color: var(--sub); font-weight: 600; position: sticky; top: 0; }
+  tbody tr:hover { background: #fdf9f2; }
+  .table-wrap { max-height: 420px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+  td a { color: var(--accent2); text-decoration: none; }
+  footer { text-align: center; color: var(--sub); font-size: .78rem; padding: 20px; }
+  #empty-note { color: var(--sub); padding: 30px; text-align: center; }
+</style>
+</head>
+<body>
+<header>
+  <h1>飛騨牛 枝肉相場の推移 — 和牛去勢 加重平均キロ単価</h1>
+  <p>出典: <a href="https://hidameat.or.jp/market_post" target="_blank" rel="noopener">JAひだミート 牛枝肉相場</a>(毎週の相場表画像より読み取り・税込円/kg)</p>
+</header>
+<main>
+  <div class="cards" id="cards"></div>
+
+  <section class="panel">
+    <h2>推移グラフ</h2>
+    <div class="controls" id="range-controls">
+      <button data-range="13">直近3ヶ月</button>
+      <button data-range="26">半年</button>
+      <button data-range="9999" class="active">全期間</button>
+      <span style="flex:1"></span>
+      <button id="toggle-heads" class="active">上場頭数</button>
+      <button id="toggle-top" class="active">最高取引単価</button>
+    </div>
+    <div class="chart-wrap"><canvas id="chart"></canvas></div>
+    <div id="empty-note" style="display:none">データがまだありません。data.js にデータが追加されると表示されます。</div>
+  </section>
+
+  <section class="panel">
+    <h2>データ一覧</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>開催日</th><th>去勢 加重平均(円/kg)</th><th>前回比</th><th>上場頭数</th><th>最高取引単価(円/kg)</th><th>相場表</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<footer>
+  本サイトは個人用の集計ページです。数値は公開画像からの読み取り値であり、正確な情報は
+  <a href="https://hidameat.or.jp/market_post">JAひだミート公式サイト</a>をご確認ください。
+</footer>
+
+<script src="data.js"></script>
+<script>
+const data = (window.HIDA_DATA || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+const fmt = n => (n == null ? "—" : n.toLocaleString("ja-JP"));
+const $ = id => document.getElementById(id);
+
+// ---- summary cards ----
+(function () {
+  if (!data.length) return;
+  const last = data[data.length - 1], prev = data[data.length - 2];
+  const diff = prev && last.steerAvg != null && prev.steerAvg != null ? last.steerAvg - prev.steerAvg : null;
+  const diffCls = diff == null ? "flat" : diff > 0 ? "up" : diff < 0 ? "down" : "flat";
+  const diffTxt = diff == null ? "" : (diff > 0 ? "▲ +" : diff < 0 ? "▼ " : "± ") + fmt(diff) + " 円(前回比)";
+  const ymd = last.date.replace(/-/g, "/");
+  const vals = data.map(d => d.steerAvg).filter(v => v != null);
+  $("cards").innerHTML = `
+    <div class="card"><div class="label">最新(${ymd} 開催)去勢 加重平均</div>
+      <div class="value">${fmt(last.steerAvg)} <small>円/kg</small></div>
+      <div class="diff ${diffCls}">${diffTxt}</div></div>
+    <div class="card"><div class="label">上場頭数(和牛・最新)</div>
+      <div class="value">${fmt(last.heads)} <small>頭</small></div></div>
+    <div class="card"><div class="label">最高取引単価(最新)</div>
+      <div class="value">${fmt(last.topPrice)} <small>円/kg</small></div></div>
+    <div class="card"><div class="label">期間中の去勢平均 最高 / 最低</div>
+      <div class="value" style="font-size:1.15rem">${fmt(Math.max(...vals))} / ${fmt(Math.min(...vals))} <small>円/kg</small></div></div>`;
+})();
+
+// ---- chart ----
+let chart, range = 9999, showHeads = true, showTop = true;
+function render() {
+  const d = data.slice(-range);
+  if (!d.length) { $("empty-note").style.display = "block"; return; }
+  const labels = d.map(x => x.date.slice(2).replace(/-/g, "/"));
+  const ds = [{
+    label: "去勢 加重平均(円/kg)", data: d.map(x => x.steerAvg),
+    borderColor: "#a4453a", backgroundColor: "#a4453a22",
+    yAxisID: "y", tension: .25, spanGaps: true, pointRadius: 2.5, borderWidth: 2.2, fill: true
+  }];
+  if (showTop) ds.push({
+    label: "最高取引単価(円/kg)", data: d.map(x => x.topPrice),
+    borderColor: "#b08a2e", borderDash: [6, 4], yAxisID: "y",
+    tension: .25, spanGaps: true, pointRadius: 0, borderWidth: 1.6
+  });
+  if (showHeads) ds.push({
+    type: "bar", label: "上場頭数(頭)", data: d.map(x => x.heads),
+    backgroundColor: "#3a6ea455", yAxisID: "y2", borderRadius: 3
+  });
+  const cfg = {
+    type: "line",
+    data: { labels, datasets: ds },
+    options: {
+      responsive: true, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+      scales: {
+        y: { position: "left", title: { display: true, text: "円/kg" } },
+        y2: { position: "right", display: showHeads, grid: { drawOnChartArea: false },
+              title: { display: true, text: "頭" }, suggestedMax: Math.max(...d.map(x => x.heads || 0)) * 2.4 },
+        x: { ticks: { maxRotation: 60, autoSkip: true } }
+      },
+      plugins: { tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${fmt(c.parsed.y)}` } } }
+    }
+  };
+  if (chart) chart.destroy();
+  chart = new Chart($("chart"), cfg);
+}
+document.querySelectorAll("#range-controls [data-range]").forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll("[data-range]").forEach(x => x.classList.remove("active"));
+    b.classList.add("active"); range = +b.dataset.range; render();
+  };
+});
+$("toggle-heads").onclick = e => { showHeads = !showHeads; e.target.classList.toggle("active"); render(); };
+$("toggle-top").onclick = e => { showTop = !showTop; e.target.classList.toggle("active"); render(); };
+render();
+
+// ---- table (newest first) ----
+$("tbody").innerHTML = data.slice().reverse().map((x, i, arr) => {
+  const prev = arr[i + 1];
+  const diff = prev && x.steerAvg != null && prev.steerAvg != null ? x.steerAvg - prev.steerAvg : null;
+  const cls = diff == null ? "flat" : diff > 0 ? "up" : diff < 0 ? "down" : "flat";
+  const txt = diff == null ? "—" : (diff > 0 ? "+" : "") + fmt(diff);
+  const img = x.img || `https://hidameat.or.jp/wp-hidameat/wp-content/uploads/${x.date.slice(0,4)}/${x.date.slice(5,7)}/${x.date.slice(5,7)}${x.date.slice(8,10)}.gif`;
+  return `<tr><td>${x.date.replace(/-/g, "/")}</td><td><b>${fmt(x.steerAvg)}</b></td>
+    <td class="diff ${cls}">${txt}</td><td>${fmt(x.heads)}</td><td>${fmt(x.topPrice)}</td>
+    <td><a href="${img}" target="_blank" rel="noopener">画像</a></td></tr>`;
+}).join("");
+</script>
+</body>
+</html>

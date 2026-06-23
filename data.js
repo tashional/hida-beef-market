@@ -1,8 +1,8 @@
-// JAひだミート 牛枝肉相場データ(相場表画像からの読み取り値)
+// JAひだミー〈 牛枝肉相場データ(相場表画像からの読み取り値)
 // date: せり開催日 / steerAvg: 和牛去勢「計」の加重平均キロ単価(円/kg・税込)
 // heads: 取引頭数(和牛去勢計+雌計) / topPrice: 当日の最高高値(去勢・雌の高い方, 円/kg)
 // 相場表画像URLは date から自動生成されます(uploads/YYYY/MM/MMDD.gif)
-// ※自動更新タスクが末尾に1行ずつ追記します。「1エントリ=1行」の形式を必ず維持してください。
+// ※自動更新タスクが末尾に1行せつ追記します。「1エントリ=1行」の形式を必び維持してください。
 window.HIDA_DATA = [
 {date:"2025-06-02",steerAvg:3014,heads:102,topPrice:4050},
 {date:"2025-06-09",steerAvg:3044,heads:102,topPrice:4126},
@@ -52,4 +52,5 @@ window.HIDA_DATA = [
 {date:"2026-06-01",steerAvg:3034,heads:100,topPrice:3445},
 {date:"2026-06-08",steerAvg:3003,heads:103,topPrice:3661},
 {date:"2026-06-15",steerAvg:3017,heads:94,topPrice:3499},
+{date:"2026-06-22",steerAvg:3018,heads:101,topPrice:3596},
 ];

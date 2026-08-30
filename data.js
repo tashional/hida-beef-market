@@ -57,4 +57,7 @@ window.HIDA_DATA = [
 {date:"2026-07-06",steerAvg:3163,heads:114,topPrice:3478},
 {date:"2026-07-13",steerAvg:3069,heads:129,topPrice:3618},
 {date:"2026-07-27",steerAvg:2980,heads:126,topPrice:4266},
+{date:"2026-08-03",steerAvg:3139,heads:130,topPrice:4190},
+{date:"2026-08-10",steerAvg:3040,heads:123,topPrice:3823},
+{date:"2026-08-24",steerAvg:2931,heads:136,topPrice:3629},
 ];
